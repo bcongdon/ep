@@ -59,11 +59,20 @@ func filterEmojis(emojis map[string][]Emoji, query string) []string {
 func drawEmojis(table *tview.Table, emojis map[string][]Emoji, query string) {
 	filteredEmojis := filterEmojis(emojis, query)
 	table.Clear()
-	for word := 0; word < len(filteredEmojis); word++ {
-		r, c := word/numCols, word%numCols
-		table.SetCell(r, c,
-			tview.NewTableCell(filteredEmojis[word]))
+
+	used := make(map[string]bool)
+	gridIdx := 0
+	for idx := 0; idx < len(filteredEmojis); idx++ {
+		r, c := gridIdx/numCols, gridIdx%numCols
+		emoji := filteredEmojis[idx]
+
+		if _, alreadyUsed := used[emoji]; !alreadyUsed {
+			table.SetCell(r, c, tview.NewTableCell(emoji))
+			used[emoji] = true
+			gridIdx += 1
+		}
 	}
+
 	table.ScrollToBeginning()
 	table.Select(0, 0)
 }
