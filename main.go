@@ -12,6 +12,8 @@ import (
 	"github.com/rivo/tview"
 )
 
+const numCols int = 19
+
 type Emoji struct {
 	Keywords []string `json:"keywords"`
 	Char     string   `json:"char"`
@@ -56,12 +58,11 @@ func filterEmojis(emojis map[string][]Emoji, query string) []string {
 
 func drawEmojis(table *tview.Table, emojis map[string][]Emoji, query string) {
 	filteredEmojis := filterEmojis(emojis, query)
-	numCols := 10
 	table.Clear()
 	for word := 0; word < len(filteredEmojis); word++ {
 		r, c := word/numCols, word%numCols
 		table.SetCell(r, c,
-			tview.NewTableCell(" "+filteredEmojis[word]+" "))
+			tview.NewTableCell(filteredEmojis[word]))
 	}
 	table.ScrollToBeginning()
 	table.Select(0, 0)
