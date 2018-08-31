@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"sort"
+	"strings"
 
 	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell"
@@ -29,12 +30,9 @@ func getEmojis() (map[string][]Emoji, error) {
 	}
 
 	keywordMap := make(map[string][]Emoji)
-	for _, emoji := range nameMap {
+	for name, emoji := range nameMap {
+		keywordMap[name] = append(keywordMap[name], emoji)
 		for _, keyword := range emoji.Keywords {
-			if _, ok := keywordMap[keyword]; ok {
-				keywordMap[keyword] = []Emoji{}
-			}
-
 			keywordMap[keyword] = append(keywordMap[keyword], emoji)
 		}
 	}
@@ -42,16 +40,31 @@ func getEmojis() (map[string][]Emoji, error) {
 	return keywordMap, nil
 }
 
-func drawEmojis(table *tview.Table, emojis []string) {
-	cols, rows := 10, 200
-	word := 0
-	for r := 0; r < rows; r++ {
-		for c := 0; c < cols; c++ {
-			table.SetCell(r, c,
-				tview.NewTableCell(" "+emojis[word]+" "))
-			word = (word + 1) % len(emojis)
+func filterEmojis(emojis map[string][]Emoji, query string) []string {
+	justEmojis := []string{}
+	for key, e := range emojis {
+		if !strings.Contains(key, query) {
+			continue
+		}
+		for _, emoji := range e {
+			justEmojis = append(justEmojis, emoji.Char)
 		}
 	}
+	sort.Sort(sort.Reverse(sort.StringSlice(justEmojis)))
+	return justEmojis
+}
+
+func drawEmojis(table *tview.Table, emojis map[string][]Emoji, query string) {
+	filteredEmojis := filterEmojis(emojis, query)
+	numCols := 10
+	table.Clear()
+	for word := 0; word < len(filteredEmojis); word++ {
+		r, c := word/numCols, word%numCols
+		table.SetCell(r, c,
+			tview.NewTableCell(" "+filteredEmojis[word]+" "))
+	}
+	table.ScrollToBeginning()
+	table.Select(0, 0)
 }
 
 func main() {
@@ -59,11 +72,12 @@ func main() {
 	table := tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, true).
-		SetFixed(1, 1)
+		SetFixed(0, 0)
 
 	inputField := tview.NewInputField().
 		SetDoneFunc(func(key tcell.Key) {
-			app.Stop()
+			app.SetFocus(table)
+			table.SetSelectable(true, true)
 		})
 
 	inputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -79,18 +93,17 @@ func main() {
 		SetColumns(1, 1).
 		AddItem(inputField, 0, 0, 1, 3, 0, 0, true).
 		AddItem(table, 2, 0, 1, 3, 0, 0, false)
+	grid.SetBorder(true).SetRect(0, 0, 60, 25)
+	grid.SetTitle("Emoji Picker")
 
 	emojis, _ := getEmojis()
-	justEmojis := []string{}
-	for _, e := range emojis {
-		for _, emoji := range e {
-			justEmojis = append(justEmojis, emoji.Char)
-		}
-	}
-	sort.Sort(sort.Reverse(sort.StringSlice(justEmojis)))
-	drawEmojis(table, justEmojis)
+	drawEmojis(table, emojis, "")
 
-	table.SetFixed(1, 1).SetDoneFunc(func(key tcell.Key) {
+	inputField.SetChangedFunc(func(text string) {
+		drawEmojis(table, emojis, text)
+	})
+
+	table.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyEnter {
 			table.SetSelectable(true, true)
 			app.Stop()
@@ -106,11 +119,15 @@ func main() {
 		if event.Key() == tcell.KeyUp && row == 0 {
 			app.SetFocus(inputField)
 			table.SetSelectable(false, false)
+		} else if event.Key() == tcell.KeyRune {
+			inputField.SetText(inputField.GetText() + string(event.Rune()))
+			app.SetFocus(inputField)
+			table.SetSelectable(false, false)
 		}
 		return event
 	})
 
-	if err := app.SetRoot(grid, true).Run(); err != nil {
+	if err := app.SetRoot(grid, false).Run(); err != nil {
 		panic(err)
 	}
 }
