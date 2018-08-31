@@ -58,8 +58,6 @@ func filterEmojis(emojis map[string][]Emoji, query string) []string {
 
 func drawEmojis(table *tview.Table, emojis map[string][]Emoji, query string) {
 	filteredEmojis := filterEmojis(emojis, query)
-	table.Clear()
-
 	used := make(map[string]bool)
 	gridIdx := 0
 	for idx := 0; idx < len(filteredEmojis); idx++ {
@@ -69,7 +67,7 @@ func drawEmojis(table *tview.Table, emojis map[string][]Emoji, query string) {
 		if _, alreadyUsed := used[emoji]; !alreadyUsed {
 			table.SetCell(r, c, tview.NewTableCell(emoji))
 			used[emoji] = true
-			gridIdx += 1
+			gridIdx++
 		}
 	}
 
@@ -110,6 +108,8 @@ func main() {
 	drawEmojis(table, emojis, "")
 
 	inputField.SetChangedFunc(func(text string) {
+		table.Clear()
+		app.Draw()
 		drawEmojis(table, emojis, text)
 	})
 
