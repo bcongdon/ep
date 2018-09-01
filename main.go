@@ -7,11 +7,12 @@ import (
 	"strings"
 
 	"github.com/atotto/clipboard"
+	"github.com/bcongdon/emoji-ordering"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
 
-const numCols int = 19
+const numCols int = 10
 
 type Emoji struct {
 	Keywords []string `json:"keywords"`
@@ -48,7 +49,7 @@ func filterEmojis(emojis map[string][]Emoji, query string) []string {
 			justEmojis = append(justEmojis, emoji.Char)
 		}
 	}
-	sort.Sort(sort.Reverse(sort.StringSlice(justEmojis)))
+	sort.Sort(ordering.EmojiSlice(justEmojis))
 	return justEmojis
 }
 
