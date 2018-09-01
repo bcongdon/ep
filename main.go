@@ -1,9 +1,8 @@
-// Demo code for the Table primitive.
+//go:generate esc -o static.go -pkg main static
 package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"sort"
 	"strings"
 
@@ -20,13 +19,10 @@ type Emoji struct {
 }
 
 func getEmojis() (map[string][]Emoji, error) {
-	raw, err := ioutil.ReadFile("emojis.json")
-	if err != nil {
-		return nil, err
-	}
+	raw := FSMustByte(false, "/static/emojis.json")
 
 	nameMap := make(map[string]Emoji)
-	err = json.Unmarshal(raw, &nameMap)
+	err := json.Unmarshal(raw, &nameMap)
 	if err != nil {
 		return nil, err
 	}
