@@ -3,6 +3,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"sort"
 	"strings"
 
@@ -73,17 +74,19 @@ func drawEmojis(table *tview.Table, emojis map[string][]Emoji, query string) {
 }
 
 func main() {
+	flag.Parse()
 	app := tview.NewApplication()
 	table := tview.NewTable().
 		SetBorders(false).
 		SetSelectable(true, true).
 		SetFixed(0, 0)
 
+	initialQuery := strings.Join(flag.Args(), " ")
 	inputField := tview.NewInputField().
 		SetDoneFunc(func(key tcell.Key) {
 			app.SetFocus(table)
 			table.SetSelectable(true, true)
-		})
+		}).SetText(initialQuery)
 
 	inputField.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyDown {
@@ -102,7 +105,7 @@ func main() {
 	grid.SetTitle("Emoji Picker")
 
 	emojis, _ := getEmojis()
-	drawEmojis(table, emojis, "")
+	drawEmojis(table, emojis, initialQuery)
 
 	inputField.SetChangedFunc(func(text string) {
 		table.Clear()
