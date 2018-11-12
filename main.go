@@ -4,6 +4,8 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
+	"log"
 	"sort"
 	"strings"
 
@@ -14,6 +16,9 @@ import (
 )
 
 const numCols int = 10
+
+var outputFlag = flag.String("output", "clipboard", "The output of ep. Choices: clipboard, stdout")
+var noninteractiveFlag = flag.Bool("noninteractive", false, "If set, doesn't display emoji picker -- instead just outputting the first selection for the provided query.")
 
 type Emoji struct {
 	Keywords []string `json:"keywords"`
@@ -73,8 +78,38 @@ func drawEmojis(table *tview.Table, emojis map[string][]Emoji, query string) {
 	table.Select(0, 0)
 }
 
+func validateFlags() {
+	if *outputFlag != "clipboard" && *outputFlag != "stdout" {
+		log.Panicf("Invalid output method: %s\n", *outputFlag)
+	}
+}
+
+func outputEmoji(emoji string) {
+	switch *outputFlag {
+	case "clipboard":
+		clipboard.WriteAll(emoji)
+	case "stdout":
+		fmt.Println(emoji)
+	default:
+		log.Panicf("Unknown output method: %s", *outputFlag)
+	}
+}
+
+func runNoninterativeMode(emojis map[string][]Emoji, query string) {
+	if len(query) == 0 {
+		log.Panicln("A query must be specified in noninteractive mode.")
+	}
+
+	filteredEmojis := filterEmojis(emojis, query)
+	if len(filteredEmojis) > 0 {
+		outputEmoji(filteredEmojis[0])
+	}
+}
+
 func main() {
 	flag.Parse()
+	validateFlags()
+
 	app := tview.NewApplication()
 	table := tview.NewTable().
 		SetBorders(false).
@@ -105,6 +140,10 @@ func main() {
 	grid.SetTitle("Emoji Picker")
 
 	emojis, _ := getEmojis()
+	if *noninteractiveFlag {
+		runNoninterativeMode(emojis, initialQuery)
+		return
+	}
 	drawEmojis(table, emojis, initialQuery)
 
 	inputField.SetChangedFunc(func(text string) {
@@ -120,8 +159,8 @@ func main() {
 		}
 	}).SetSelectedFunc(func(row int, column int) {
 		cell := table.GetCell(row, column)
-		clipboard.WriteAll(cell.Text)
 		app.Stop()
+		outputEmoji(cell.Text)
 	}).SetSelectable(false, false)
 
 	table.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
