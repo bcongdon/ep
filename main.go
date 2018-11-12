@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"sort"
 	"strings"
 
@@ -19,6 +20,12 @@ const numCols int = 10
 
 var outputFlag = flag.String("output", "clipboard", "The output of ep. Choices: clipboard, stdout")
 var noninteractiveFlag = flag.Bool("noninteractive", false, "If set, doesn't display emoji picker -- instead just outputting the first selection for the provided query.")
+
+var usageFunc = func() {
+	fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
+	fmt.Fprintf(flag.CommandLine.Output(), "%s [QUERY]\n", os.Args[0])
+	flag.PrintDefaults()
+}
 
 type Emoji struct {
 	Keywords []string `json:"keywords"`
@@ -107,6 +114,7 @@ func runNoninterativeMode(emojis map[string][]Emoji, query string) {
 }
 
 func main() {
+	flag.Usage = usageFunc
 	flag.Parse()
 	validateFlags()
 

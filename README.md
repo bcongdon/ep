@@ -16,10 +16,22 @@ go install github.com/bcongdon/ep
 ## Usage
 
 ```
-ep
+Usage of ./ep:
+./ep [QUERY]
+  -noninteractive
+    	If set, doesn't display emoji picker -- instead just outputting the first selection for the provided query.
+  -output string
+    	The output of ep. Choices: clipboard, stdout (default "clipboard")
 ```
 
 Navigation can be done with the arrow keys. Pressing `Enter` copies the selected emoji to the clipboard.
+
+### Examples
+
+- `ep` - Opens the default emoji picker.
+- `ep wink` - Opens the default emoji picker with the query "wink" already entered
+- `ep -noninteractive wink` - Copies the first search result for "wink" to the clipboard
+- `ep -noninteractive -output=stdout wink` - Outputs the first search result for "wink" to stdout
 
 ## Troubleshooting
 
