@@ -13,6 +13,13 @@
 go install github.com/bcongdon/ep
 ```
 
+### Via HomeBrew
+
+```
+brew tap bcongdon/ep
+brew install ep
+```
+
 ## Usage
 
 ```
