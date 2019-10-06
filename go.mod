@@ -11,5 +11,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.4
 	github.com/rivo/tview v0.0.0-20190829161255-f8bc69b90341
 	github.com/rivo/uniseg v0.1.0
-	golang.org/x/text v0.3.0
+	golang.org/x/sys v0.0.0-20191005200804-aed5e4c7ecf9 // indirect
+	golang.org/x/text v0.3.2
 )

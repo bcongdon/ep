@@ -11,15 +11,18 @@ import (
 	"strings"
 
 	"github.com/atotto/clipboard"
-	"github.com/bcongdon/emoji-ordering"
+	ordering "github.com/bcongdon/emoji-ordering"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
 
 const numCols int = 10
 
-var outputFlag = flag.String("output", "clipboard", "The output of ep. Choices: clipboard, stdout")
-var noninteractiveFlag = flag.Bool("noninteractive", false, "If set, doesn't display emoji picker -- instead just outputting the first selection for the provided query.")
+var (
+	outputFlag         = flag.String("output", "clipboard", "The output of ep. Choices: clipboard, stdout")
+	noninteractiveFlag = flag.Bool("noninteractive", false, "If set, doesn't display emoji picker -- instead just outputting the first selection for the provided query.")
+	emojis             = mustGetEmojis()
+)
 
 var usageFunc = func() {
 	fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
@@ -30,6 +33,14 @@ var usageFunc = func() {
 type Emoji struct {
 	Keywords []string `json:"keywords"`
 	Char     string   `json:"char"`
+}
+
+func mustGetEmojis() map[string][]Emoji {
+	emojis, err := getEmojis()
+	if err != nil {
+		panic(err)
+	}
+	return emojis
 }
 
 func getEmojis() (map[string][]Emoji, error) {
@@ -102,6 +113,23 @@ func outputEmoji(emoji string) {
 	}
 }
 
+func getEmojiName(emoji string) (string, bool) {
+	raw := FSMustByte(false, "/static/emojis.json")
+
+	nameMap := make(map[string]Emoji)
+	err := json.Unmarshal(raw, &nameMap)
+	if err != nil {
+		return "", false
+	}
+
+	for name, e := range nameMap {
+		if e.Char == emoji {
+			return name, true
+		}
+	}
+	return "", false
+}
+
 func runNoninterativeMode(emojis map[string][]Emoji, query string) {
 	if len(query) == 0 {
 		log.Panicln("A query must be specified in noninteractive mode.")
@@ -124,6 +152,8 @@ func main() {
 		SetSelectable(true, true).
 		SetFixed(0, 0)
 
+	emojiNameField := tview.NewInputField()
+
 	initialQuery := strings.Join(flag.Args(), " ")
 	inputField := tview.NewInputField().
 		SetDoneFunc(func(key tcell.Key) {
@@ -143,11 +173,11 @@ func main() {
 		SetRows(1, 1).
 		SetColumns(1, 1).
 		AddItem(inputField, 0, 0, 1, 3, 0, 0, true).
-		AddItem(table, 2, 0, 1, 3, 0, 0, false)
+		AddItem(table, 2, 0, 9, 3, 0, 0, false).
+		AddItem(emojiNameField, 11, 0, 1, 3, 0, 0, false)
 	grid.SetBorder(true).SetRect(0, 0, 60, 25)
 	grid.SetTitle("Emoji Picker")
 
-	emojis, _ := getEmojis()
 	if *noninteractiveFlag {
 		runNoninterativeMode(emojis, initialQuery)
 		return
@@ -182,6 +212,17 @@ func main() {
 			table.SetSelectable(false, false)
 		}
 		return event
+	})
+
+	table.SetSelectionChangedFunc(func(row, col int) {
+		if r, c := table.GetSelectable(); !r && !c {
+			emojiNameField.SetText("")
+			return
+		}
+		cell := table.GetCell(row, col)
+		if name, ok := getEmojiName(cell.Text); ok {
+			emojiNameField.SetText(name)
+		}
 	})
 
 	if err := app.SetRoot(grid, false).Run(); err != nil {
