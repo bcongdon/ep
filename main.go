@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/atotto/clipboard"
-	"github.com/bcongdon/emoji-ordering"
+	ordering "github.com/bcongdon/emoji-ordering"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
@@ -43,7 +43,8 @@ func getEmojis() (map[string][]Emoji, error) {
 
 	keywordMap := make(map[string][]Emoji)
 	for name, emoji := range nameMap {
-		keywordMap[name] = append(keywordMap[name], emoji)
+		nameKey := strings.ReplaceAll(name, "_", " ")
+		keywordMap[nameKey] = append(keywordMap[nameKey], emoji)
 		for _, keyword := range emoji.Keywords {
 			keywordMap[keyword] = append(keywordMap[keyword], emoji)
 		}
