@@ -14,9 +14,8 @@ import (
 	ordering "github.com/bcongdon/emoji-ordering"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"golang.org/x/crypto/ssh/terminal"
 )
-
-const numCols = 10
 
 var (
 	outputFlag         = flag.String("output", "clipboard", "The output of ep. Choices: clipboard, stdout")
@@ -69,7 +68,7 @@ func filterEmojis(emojis map[string][]Emoji, query string) []string {
 	return justEmojis
 }
 
-func drawEmojis(table *tview.Table, emojis map[string][]Emoji, query string) {
+func drawEmojis(table *tview.Table, emojis map[string][]Emoji, query string, numCols int) {
 	filteredEmojis := filterEmojis(emojis, query)
 	used := make(map[string]bool)
 	gridIdx := 0
@@ -124,8 +123,8 @@ func main() {
 	app := tview.NewApplication()
 	table := tview.NewTable().
 		SetBorders(false).
-		SetSelectable(true, true)
-		// SetFixed(0, 0)
+		SetSelectable(true, true).
+		SetFixed(0, 0)
 
 	initialQuery := strings.Join(flag.Args(), " ")
 	inputField := tview.NewInputField().
@@ -142,23 +141,29 @@ func main() {
 		return event
 	})
 
+	width, height, err := terminal.GetSize(0)
+	if err != nil {
+		log.Fatalf("Unable to get terminal size: %v", err)
+	}
+	height = clamp(height, 20, 40)
+	numCols := (width - 2) / 3
+
 	grid := tview.NewGrid().
 		SetRows(1, 1).
 		SetColumns(1, 1).
 		AddItem(inputField, 0, 0, 1, 3, 0, 0, true).
 		AddItem(table, 2, 0, 1, 3, 0, 0, false)
-	grid.SetBorder(true).SetTitle("Emoji Picker").SetRect(0, 0, 60, 25)
+	grid.SetBorder(true).SetTitle("Emoji Picker").SetRect(0, 0, width, height)
 
 	emojis, _ := getEmojis()
 	if *noninteractiveFlag {
 		runNoninterativeMode(emojis, initialQuery)
 		return
 	}
-	drawEmojis(table, emojis, initialQuery)
 
 	inputField.SetChangedFunc(func(text string) {
 		table.Clear()
-		drawEmojis(table, emojis, text)
+		drawEmojis(table, emojis, text, numCols)
 	})
 
 	table.SetDoneFunc(func(key tcell.Key) {
@@ -185,7 +190,19 @@ func main() {
 		return event
 	})
 
+	drawEmojis(table, emojis, initialQuery, numCols)
 	if err := app.SetRoot(grid, false).Run(); err != nil {
 		panic(err)
+	}
+}
+
+func clamp(val, low, high int) int {
+	switch {
+	case val < low:
+		return low
+	case val > high:
+		return high
+	default:
+		return val
 	}
 }
