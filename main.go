@@ -12,14 +12,16 @@ import (
 
 	"github.com/atotto/clipboard"
 	ordering "github.com/bcongdon/emoji-ordering"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
-const numCols int = 10
+const numCols = 10
 
-var outputFlag = flag.String("output", "clipboard", "The output of ep. Choices: clipboard, stdout")
-var noninteractiveFlag = flag.Bool("noninteractive", false, "If set, doesn't display emoji picker -- instead just outputting the first selection for the provided query.")
+var (
+	outputFlag         = flag.String("output", "clipboard", "The output of ep. Choices: clipboard, stdout")
+	noninteractiveFlag = flag.Bool("noninteractive", false, "If set, doesn't display emoji picker -- instead just outputting the first selection for the provided query.")
+)
 
 var usageFunc = func() {
 	fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args[0])
@@ -122,8 +124,8 @@ func main() {
 	app := tview.NewApplication()
 	table := tview.NewTable().
 		SetBorders(false).
-		SetSelectable(true, true).
-		SetFixed(0, 0)
+		SetSelectable(true, true)
+		// SetFixed(0, 0)
 
 	initialQuery := strings.Join(flag.Args(), " ")
 	inputField := tview.NewInputField().
@@ -145,8 +147,7 @@ func main() {
 		SetColumns(1, 1).
 		AddItem(inputField, 0, 0, 1, 3, 0, 0, true).
 		AddItem(table, 2, 0, 1, 3, 0, 0, false)
-	grid.SetBorder(true).SetRect(0, 0, 60, 25)
-	grid.SetTitle("Emoji Picker")
+	grid.SetBorder(true).SetTitle("Emoji Picker").SetRect(0, 0, 60, 25)
 
 	emojis, _ := getEmojis()
 	if *noninteractiveFlag {
@@ -157,7 +158,6 @@ func main() {
 
 	inputField.SetChangedFunc(func(text string) {
 		table.Clear()
-		app.Draw()
 		drawEmojis(table, emojis, text)
 	})
 
