@@ -1,6 +1,6 @@
 module github.com/bcongdon/ep
 
-go 1.12
+go 1.15
 
 require (
 	github.com/atotto/clipboard v0.1.2
